@@ -1,6 +1,6 @@
 
-function [recon,oValues] = csReconFISTA_nick( samples, lambda, varargin )
-  % recon = csReconFISTA( samples, lambda [, 'debug', debug, 'nIter', nIter, ...
+function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
+  % recon = csReconFISTA_maskLF( samples, lambda [, 'debug', debug, 'nIter', nIter, ...
   %   'polish', polish, 'printEvery', printEvery, 'verbose', verbose, ...
   %   'waveletType', waveletType ] )
   %
@@ -21,7 +21,7 @@ function [recon,oValues] = csReconFISTA_nick( samples, lambda, varargin )
   % verbose - if true, prints informative statements
   % waveletType - either 'Deaubechies' for Deaubechies-4 (default) or 'Haar'
   %
-  % Written by Nicholas Dwork - Copyright 2017
+  % Written by Nicholas Dwork - Copyright 2019
   %
   % https://github.com/ndwork/dworkLib.git
   %
@@ -29,7 +29,7 @@ function [recon,oValues] = csReconFISTA_nick( samples, lambda, varargin )
   % is offered without any warranty expressed or implied, including the
   % implied warranties of merchantability or fitness for a particular purpose.
 
-  wavSplit = zeros(4);  wavSplit(1,1) = 1;
+  wavSplit = zeros(8);  wavSplit(1,1) = 1;
   %wavSplit = [1 0 0 0; 0 0 0 0; 0 0 0 0; 0 0 0 0;];
   %wavSplit = [ 1 0; 0 0; ];
 

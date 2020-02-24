@@ -1,7 +1,7 @@
 
 
-function [recon,oValues,xStar] = csReconFISTA_2level( samples, lambda, varargin )
-  % recon = csReconFISTA_2level( samples, lambda [, 'debug', debug, ...
+function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
+  % recon = csReconFISTA_msbpd( samples, lambda [, 'debug', debug, ...
   %   'nIter', nIter, 'printEvery', printEvery, 'wavSplit', wavSplit, ...
   %   'verbose', verbose, 'waveletType', waveletType ] )
   %
@@ -27,7 +27,7 @@ function [recon,oValues,xStar] = csReconFISTA_2level( samples, lambda, varargin 
   % verbose - if true, prints informative statements
   % waveletType - either 'Deaubechies' for Deaubechies-4 (default) or 'Haar'
   %
-  % Written by Nicholas Dwork - Copyright 2017
+  % Written by Nicholas Dwork - Copyright 2019
   %
   % https://github.com/ndwork/dworkLib.git
   %

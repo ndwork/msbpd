@@ -20,7 +20,7 @@ function run_csBetterSampling( varargin )
   p.parse( varargin{:} );
   datacases = p.Results.datacases;
 %datacases = [ 1 2 3 4 8 9 13 7 10 0 11 12 14 15 16 17 18 19 20 ];
-datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
+%datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
 
   wavSplit = zeros(8);  wavSplit(1,1) = 1;
 
@@ -32,7 +32,6 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
   logFile = [ mainOut, filesep, logFilename ];
   if ~exist( logFile, 'file' )
     logID = fopen( logFile, 'a' );
-    fprintf( logID, '----  New Run Here ----\n' );
     fprintf( logID, 'noiseSDev, vdSig, nSamples, datacase, Algorithm, lambda, err \n' );
     fclose( logID );
   end
@@ -46,8 +45,8 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
           absDiffRange = [];
 
           for lambda = lambdas
-            lambda_2level = lambda;
-            lambda_Nick = lambda;
+            lambda_msbpd = lambda;
+            lambda_maskLF = lambda;
 
             outDir = [ mainOut, ...
               '/noiseSDev_', num2str( noiseSDev ), ...
@@ -57,12 +56,12 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
               '/lambda_', num2str( lambda ), '/' ];
             if ~exist( outDir, 'dir' ), mkdir( outDir ); end
 
-            %[img,lambda,lambda_2level,lambda_Nick] = loadDatacase( datacase );
+            %[img,lambda,lambda_msbpd,lambda_maskLF] = loadDatacase( datacase );
             img = loadDatacase( datacase, testImages );
             sImg = size( img );
 
             disp( [ 'Working on ', outDir ] );
-            if exist( [ outDir, filesep, 'absDiff_2level.png' ], 'file' )
+            if exist( [ outDir, filesep, 'absDiff_msbpd.png' ], 'file' )
               disp( '  Previously completed.  Continuing.' );
               continue;
             end
@@ -107,7 +106,7 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
                   'verbose', true, 'printEvery', printEvery, 'debug', debug, 'nIter', nIter );
 
               elseif i == 2
-                [ thisRecon, theseOValues ] = csReconFISTA_nick( fftSamples, lambda_Nick, 'wavSplit', wavSplit, ...
+                [ thisRecon, theseOValues ] = csReconFISTA_maskLF( fftSamples, lambda_maskLF, 'wavSplit', wavSplit, ...
                   'verbose', true, 'printEvery', printEvery, 'debug', debug, 'nIter', nIter );
 
               elseif i == 3
@@ -115,11 +114,11 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
                   'verbose', true, 'printEvery', printEvery, 'debug', debug, 'nIter', nIter );
 
               elseif i == 4
-                [ thisRecon, theseOValues ] = csReconFISTA_nick( fftSamples_wACR, lambda_Nick, ...
+                [ thisRecon, theseOValues ] = csReconFISTA_maskLF( fftSamples_wACR, lambda_maskLF, ...
                   'wavSplit', wavSplit, 'verbose', true, 'printEvery', printEvery, 'debug', debug, 'nIter', nIter );
 
               elseif i == 5
-                [ thisRecon, theseOValues, xStar ] = csReconFISTA_2level( fftSamples_wACR, lambda_2level, ...
+                [ thisRecon, theseOValues, xStar ] = csReconFISTA_msbpd( fftSamples_wACR, lambda_msbpd, ...
                   'wavSplit', wavSplit, 'verbose', true, 'printEvery', printEvery, 'debug', debug, 'nIter', nIter );
                 showAndSaveThisImg( outDir, abs(xStar), 'absXStar', verbose, 'showScale', showScale, ...
                   'wavSplit', wavSplit, 'range', abs(wtImg) );
@@ -132,34 +131,34 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
               oValues{i} = theseOValues;
             end
             recon = recons{1};
-            recon_nick = recons{2};
+            recon_maskLF = recons{2};
             recon_wACR = recons{3};
-            recon_nick_wACR = recons{4};
-            recon_2level = recons{5};
+            recon_maskLF_wACR = recons{4};
+            recon_msbpd = recons{5};
 
-            oValues_nick = oValues{2};
+            oValues_maskLF = oValues{2};
             oValues_wACR = oValues{3};
-            oValues_nick_wACR = oValues{4};
-            oValues_2level = oValues{5};
+            oValues_maskLF_wACR = oValues{4};
+            oValues_msbpd = oValues{5};
             oValues = oValues{1};
 
             showAndSaveThisPlot( outDir, oValues, 'oValues', verbose );
-            showAndSaveThisPlot( outDir, oValues_nick, 'oValues_nick', verbose );
+            showAndSaveThisPlot( outDir, oValues_maskLF, 'oValues_maskLF', verbose );
             showAndSaveThisPlot( outDir, oValues_wACR, 'oValues_wACR', verbose );
-            showAndSaveThisPlot( outDir, oValues_nick_wACR, 'oValues_nick_wACR', verbose );
-            showAndSaveThisPlot( outDir, oValues_2level, 'oValues_2level', verbose );
+            showAndSaveThisPlot( outDir, oValues_maskLF_wACR, 'oValues_maskLF_wACR', verbose );
+            showAndSaveThisPlot( outDir, oValues_msbpd, 'oValues_msbpd', verbose );
 
             showAndSaveThisImg( outDir, abs(img), 'origImg', verbose, 'showScale', showScale );
             showAndSaveThisImg( outDir, abs(recon), 'csRecon', verbose, 'showScale', showScale, ...
               'range', abs(img) );
-            showAndSaveThisImg( outDir, abs(recon_nick), 'csReconNick', verbose, 'showScale', showScale, ...
-              'range', abs(img) );
+            showAndSaveThisImg( outDir, abs(recon_maskLF), 'csReconFISTA_maskLF', verbose, ...
+              'showScale', showScale, 'range', abs(img) );
             showAndSaveThisImg( outDir, abs(recon_wACR), 'csRecon_wACR', verbose, 'showScale', showScale, ...
               'range', abs(img) );
-            showAndSaveThisImg( outDir, abs(recon_nick_wACR), 'csRecon_nick_wACR', verbose, 'showScale', showScale, ...
-              'range', abs(img) );
-            showAndSaveThisImg( outDir, abs(recon_2level), 'csRecon2Level', verbose, 'showScale', showScale, ...
-              'range', abs(img) );
+            showAndSaveThisImg( outDir, abs(recon_maskLF_wACR), 'csRecon_maskLF_wACR', verbose, ...
+              'showScale', showScale, 'range', abs(img) );
+            showAndSaveThisImg( outDir, abs(recon_msbpd), 'csReconmsbpd', verbose, ...
+              'showScale', showScale, 'range', abs(img) );
 
             logID = fopen( [ mainOut, filesep, logFilename ], 'a' );
 
@@ -177,17 +176,17 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
               num2str(err), ...
               '\n' ] );
 
-            diff_nick = recon_nick - img;
-            err_nick = norm( diff_nick(:) ) / norm( img(:) );
-            disp([ 'Err Nick: ', num2str( err_nick ) ]);
+            diff_maskLF = recon_maskLF - img;
+            err_maskLF = norm( diff_maskLF(:) ) / norm( img(:) );
+            disp([ 'Err Nick: ', num2str( err_maskLF ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
               indx2str( nSamples, max( nSamplesArray ) ), ', ', ...
               indx2str( datacase, nDatacases ), ', ', ...
-              'Err_nick, ', ...
+              'Err_maskLF, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_nick ), ...
+              num2str( err_maskLF ), ...
               '\n' ] );
 
             diff_wACR = recon_wACR - img;
@@ -203,30 +202,30 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
               num2str( err_wACR ), ...
               '\n' ] );
 
-            diff_nick_wACR = recon_nick_wACR - img;
-            err_nick_wACR = norm( diff_nick_wACR(:) ) / norm( img(:) );
-            disp([ 'Err Nick_wACR: ', num2str( err_nick_wACR ) ]);
+            diff_maskLF_wACR = recon_maskLF_wACR - img;
+            err_maskLF_wACR = norm( diff_maskLF_wACR(:) ) / norm( img(:) );
+            disp([ 'Err Nick_wACR: ', num2str( err_maskLF_wACR ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
               indx2str( nSamples, max( nSamplesArray ) ), ', ', ...
               indx2str( datacase, nDatacases ), ', ', ...
-              'Err_nick_wACR, ', ...
+              'Err_maskLF_wACR, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_nick_wACR ), ...
+              num2str( err_maskLF_wACR ), ...
               '\n' ] );
 
-            diff_2level = recon_2level - img;
-            err_2level = norm( diff_2level(:) ) / norm( img(:) );
-            disp([ 'Err 2level: ', num2str( err_2level ) ]);
+            diff_msbpd = recon_msbpd - img;
+            err_msbpd = norm( diff_msbpd(:) ) / norm( img(:) );
+            disp([ 'Err msbpd: ', num2str( err_msbpd ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
               indx2str( nSamples, max( nSamplesArray ) ), ', ', ...
               indx2str( datacase, nDatacases ), ', ', ...
-              'Err_2level, ', ...
+              'Err_msbpd, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_2level ), ...
+              num2str( err_msbpd ), ...
               '\n' ] );
 
             if numel( absDiffRange ) == 0
@@ -236,11 +235,11 @@ datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
             showAndSaveThisImg( outDir, abs(diff), 'absDiff', verbose, 'showScale', showScale );
             showAndSaveThisImg( outDir, abs(diff_wACR), 'absDiff_wACR', verbose, 'showScale', showScale, ...
               'range', absDiffRange );
-            showAndSaveThisImg( outDir, abs(diff_nick), 'absDiff_nick', verbose, 'showScale', showScale, ...
+            showAndSaveThisImg( outDir, abs(diff_maskLF), 'absDiff_maskLF', verbose, 'showScale', showScale, ...
               'range', absDiffRange );
-            showAndSaveThisImg( outDir, abs(diff_nick_wACR), 'absDiff_nick_wACR', verbose, 'showScale', showScale, ...
-              'range', absDiffRange );
-            showAndSaveThisImg( outDir, abs(diff_2level), 'absDiff_2level', verbose, 'showScale', showScale, ...
+            showAndSaveThisImg( outDir, abs(diff_maskLF_wACR), 'absDiff_maskLF_wACR', verbose, ...
+              'showScale', showScale, 'range', absDiffRange );
+            showAndSaveThisImg( outDir, abs(diff_msbpd), 'absDiff_msbpd', verbose, 'showScale', showScale, ...
               'range', absDiffRange );
 
             fclose( logID );
