@@ -2,6 +2,8 @@
 function run_csBetterSampling( varargin )
   close all; rng(1);
 
+  addpath( './dworkLib' );
+  
   showScale = 1;
   debug = true;
   nIter = 100;
