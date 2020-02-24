@@ -1,7 +1,6 @@
 
 .DS_Store
 /out/*
-/testImages/*
 
 *.bmp
 *.jpg

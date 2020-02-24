@@ -1,12 +1,5 @@
 
-function makePaperImgs( mainOut, wavSplit, datacases, testImages )
-
-  if nargin < 1
-    mainOut = './tmp/';
-    wavSplit = zeros(8);  wavSplit(1,1) = 1;
-    datacases = 0:19;
-    testImages = listTestImages();
-  end
+function makePaperImgs( mainOut, datacases, testImages )
 
   outDir = [ mainOut, '/paperImgs' ];
 
@@ -19,6 +12,8 @@ function makePaperImgs( mainOut, wavSplit, datacases, testImages )
     img = loadDatacase( datacase, testImages );
     sImg = size( img );
 
+    wavSplit = makeWavSplit( sImg );
+    
     wtImg = wtDeaubechies2( img, wavSplit );
     wtImgScaled = wavScale( abs( wtImg ), wavSplit, 'range', [ 0 1 ] );
     if ~exist( [ outDir, '/wtScaledImg' ], 'dir' ), mkdir( [ outDir, '/wtScaledImg' ] ); end

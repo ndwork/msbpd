@@ -24,12 +24,10 @@ function run_csBetterSampling( varargin )
 %datacases = [ 1 2 3 4 8 9 13 7 10 0 11 12 14 15 16 17 18 19 20 ];
 %datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
 
-  wavSplit = zeros(8);  wavSplit(1,1) = 1;
-
   testImages = listTestImages();
 
   if ~exist( mainOut, 'dir' ), mkdir( mainOut ); end
-  makePaperImgs( mainOut, wavSplit, datacases, testImages );
+  makePaperImgs( mainOut, datacases, testImages );
 
   logFile = [ mainOut, filesep, logFilename ];
   if ~exist( logFile, 'file' )
@@ -62,6 +60,8 @@ function run_csBetterSampling( varargin )
             img = loadDatacase( datacase, testImages );
             sImg = size( img );
 
+            wavSplit = makeWavSplit( sImg );
+            
             disp( [ 'Working on ', outDir ] );
             if exist( [ outDir, filesep, 'absDiff_msbpd.png' ], 'file' )
               disp( '  Previously completed.  Continuing.' );
