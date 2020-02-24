@@ -1,5 +1,5 @@
 
-function run_csBetterSampling( varargin )
+function run_msbpd( varargin )
   close all; rng(1);
 
   addpath( './dworkLib' );

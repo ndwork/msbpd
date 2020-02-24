@@ -45,7 +45,7 @@ function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
   p.addParameter( 'printEvery', 1, @ispositive );
   p.addParameter( 'wavSplit', wavSplit, @isnumeric );
   p.addParameter( 'verbose', false, @(x) isnumeric(x) || islogical(x) );
-  p.addParameter( 'waveletType', 'Deaubechies', @(x) true );
+  p.addParameter( 'waveletType', 'Daubechies', @(x) true );
   p.parse( varargin{:} );
   checkAdjoints = p.Results.checkAdjoints;
   debug = p.Results.debug;
@@ -77,7 +77,7 @@ function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
   % A' * A = (RI)' * F' * M * F * RI
   % gGrad = A'*A*x - A'*b;
 
-  if strcmp( waveletType, 'Deaubechies' )
+  if strcmp( waveletType, 'Daubechies' )
     W = @(x) wtDeaubechies2( x, wavSplit );
     WT = @(y) iwtDeaubechies2( y, wavSplit );
   elseif strcmp( waveletType, 'Haar' )
