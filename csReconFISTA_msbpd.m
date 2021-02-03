@@ -25,7 +25,7 @@ function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
   % polish - if set to true, adds a polishing step (default is false)
   % printEvery - FISTA prints a verbose statement every printEvery iterations
   % verbose - if true, prints informative statements
-  % waveletType - either 'Deaubechies' for Deaubechies-4 (default) or 'Haar'
+  % waveletType - either 'Daubechies' for Daubechies-4 (default) or 'Haar'
   %
   % Written by Nicholas Dwork - Copyright 2019
   %
@@ -78,8 +78,8 @@ function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
   % gGrad = A'*A*x - A'*b;
 
   if strcmp( waveletType, 'Daubechies' )
-    W = @(x) wtDeaubechies2( x, wavSplit );
-    WT = @(y) iwtDeaubechies2( y, wavSplit );
+    W = @(x) wtDaubechies2( x, wavSplit );
+    WT = @(y) iwtDaubechies2( y, wavSplit );
   elseif strcmp( waveletType, 'Haar' )
     W = @(x) wtHaar2( x, wavSplit );
     WT = @(y) iwtHaar2( y, wavSplit );
@@ -87,13 +87,12 @@ function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
     error( 'Unrecognized wavelet type' );
   end
 
-  nSamples = numel( samples );
   function out = F( x )
-    out = 1/sqrt(nSamples) * fftc( x );
+    out = fftshift( fftshift( ufft2( ifftshift( ifftshift( x, 1 ), 2 ) ), 1 ), 2 );
   end
 
   function out = Fadj( y )
-    out = sqrt(nSamples) * ifftc( y );
+    out = fftshift( fftshift( uifft2( ifftshift( ifftshift( y, 1 ), 2 ) ), 1 ), 2 );
   end
 
   function out = A( x )
@@ -127,10 +126,11 @@ function [recon,oValues,xStar] = csReconFISTA_msbpd( samples, lambda, varargin )
     out = Aadj( A( x ) ) - AadjBeta;
   end
 
-  proxth = @(x,t) proxL1Complex( x, t * lambda );
+  nPixels = numel( samples );
+  proxth = @(x,t) proxL1Complex( x, t * lambda / nPixels );
 
   function out = h( x )
-    out = sum( abs( x(:) ) );
+    out = sum( abs( x(:) ) ) * lambda / nPixels;
   end
 
   x0 = W( Fadj( samples ) );

@@ -2,13 +2,11 @@
 function run_msbpd( varargin )
   close all; rng(1);
 
-  addpath( './dworkLib' );
-  
   showScale = 1;
   debug = true;
   nIter = 100;
-  lambdas = [ 1d-1 1d-2 1d-3 1d-4 5d-2 5d-3 5d-4 5d-5  ];
-  vdSigs = [ 100 75 125 150 175 ];
+  lambdas = [ 1d5 1d4 1d3 1d2 1d1 1d0 1d-1 1d-2 1d-3 1d-4 5d1 5d2 5d3 5d4 5d5 2d1 2d2 2d3 2d4 2d5 ];
+  vdSigs = [ 100 75 125 150 ];
   verbose = false;
   nDatacases = 21;
   noiseSDevs = [ 0 0.008 0.032 0.128 ];
@@ -17,43 +15,47 @@ function run_msbpd( varargin )
   mainOut = './out/';
   logFilename = 'log.csv';
 
+  datacases = [ 1 4 8 9 13 ];
+  %datacases = 0 : nDatacases-1;
   p = inputParser;
-  p.addOptional( 'datacases', 0:nDatacases-1, @isnumeric );
+  p.addOptional( 'datacases', datacases, @isnumeric );
   p.parse( varargin{:} );
   datacases = p.Results.datacases;
-%datacases = [ 1 2 3 4 8 9 13 7 10 0 11 12 14 15 16 17 18 19 20 ];
-%datacases = [ 1 2 3 4 8 9 13 7 10 0 ];
+
 
   testImages = listTestImages();
 
   if ~exist( mainOut, 'dir' ), mkdir( mainOut ); end
   makePaperImgs( mainOut, datacases, testImages );
 
-  logFile = [ mainOut, filesep, logFilename ];
-  if ~exist( logFile, 'file' )
-    logID = fopen( logFile, 'a' );
-    fprintf( logID, 'noiseSDev, vdSig, nSamples, datacase, Algorithm, lambda, err \n' );
-    fclose( logID );
-  end
-
   for noiseSDev = noiseSDevs
     for vdSig = vdSigs
       for nSamples = nSamplesArray
 
-        parfor datacaseIndx = 1 : numel( datacases )
+        %parfor datacaseIndx = 1 : numel( datacases )
+        for datacaseIndx = 1 : numel( datacases )
           datacase = datacases( datacaseIndx );
           absDiffRange = [];
 
+          thisOut = [ mainOut, filesep, 'noiseSDev_', num2str( noiseSDev ), ...
+            filesep, 'vdSig_', indx2str( vdSig, max( vdSigs ) ), ...
+            filesep, 'nSamples_', indx2str( nSamples, max( nSamplesArray ) ), ...
+            filesep, 'datacase_', indx2str( datacase, nDatacases ) ];
+          if ~exist( thisOut, 'dir' ), mkdir( thisOut ); end
+
+          logFile = [ thisOut, filesep, logFilename ];
+          if ~exist( logFile, 'file' )
+            logID = fopen( logFile, 'a' );
+            fprintf( logID, 'noiseSDev, vdSig, nSamples, datacase, Algorithm, lambda, err, ssim \n' );
+            fclose( logID );
+          end
+          
           for lambda = lambdas
             lambda_msbpd = lambda;
             lambda_maskLF = lambda;
 
-            outDir = [ mainOut, ...
-              '/noiseSDev_', num2str( noiseSDev ), ...
-              '/vdSig_', indx2str( vdSig, max( vdSigs ) ), ...
-              '/nSamples_', indx2str( nSamples, max( nSamplesArray ) ), ...
-              '/datacase_', indx2str( datacase, nDatacases ), ...
-              '/lambda_', num2str( lambda ), '/' ];
+            outDir = [ thisOut, ...
+              filesep, 'lambda_', num2str( lambda ), filesep ];
             if ~exist( outDir, 'dir' ), mkdir( outDir ); end
 
             %[img,lambda,lambda_msbpd,lambda_maskLF] = loadDatacase( datacase );
@@ -70,10 +72,10 @@ function run_msbpd( varargin )
 
             showAndSaveThisImg( outDir, abs(img), 'origImg', verbose, 'showScale', showScale );
 
-            wtImg = wtDeaubechies2( img, wavSplit );
+            wtImg = wtDaubechies2( img, wavSplit );
             showAndSaveThisImg( outDir, abs(wtImg), 'absWtImg', verbose, 'showScale', showScale, ...
               'wavSplit', wavSplit );
-            fftImg = fftshift( ufft2( img ) );
+            fftImg = fftshift( fftshift( ufft2( ifftshift( ifftshift( img, 1 ), 2 ) ), 1 ), 2 );
 
             acr = makeAutoCalRegion( sImg, wavSplit );
 
@@ -101,8 +103,7 @@ function run_msbpd( varargin )
             recons = cell( nRecons, 1 );
             oValues = cell( nRecons, 1 );
 
-            for i = 1:nRecons
-            %parfor i = 1:nRecons
+            parfor i = 1:nRecons
               if i == 1
                 [ thisRecon, theseOValues ] = csReconFISTA( fftSamples, lambda, 'wavSplit', wavSplit, ...
                   'verbose', true, 'printEvery', printEvery, 'debug', debug, 'nIter', nIter );
@@ -159,14 +160,16 @@ function run_msbpd( varargin )
               'range', abs(img) );
             showAndSaveThisImg( outDir, abs(recon_maskLF_wACR), 'csRecon_maskLF_wACR', verbose, ...
               'showScale', showScale, 'range', abs(img) );
-            showAndSaveThisImg( outDir, abs(recon_msbpd), 'csReconmsbpd', verbose, ...
+            showAndSaveThisImg( outDir, abs(recon_msbpd), 'csRecon_msbpd', verbose, ...
               'showScale', showScale, 'range', abs(img) );
 
-            logID = fopen( [ mainOut, filesep, logFilename ], 'a' );
+            logID = fopen( [ thisOut, filesep, logFilename ], 'a' );
 
             diff = recon - img;
             err = norm( diff(:) ) / norm( img(:) );
+            ssimValue = ssim( recon, img );
             disp([ 'Err: ', num2str( err ) ]);
+            disp([ 'ssimValue: ', num2str( ssimValue ) ]);
 
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
@@ -175,12 +178,15 @@ function run_msbpd( varargin )
               indx2str( datacase, nDatacases ), ', ', ...
               'Err, ', ...
               num2str( lambda ), ', ', ...
-              num2str(err), ...
+              num2str(err), ', ', ...
+              num2str(ssimValue), ...
               '\n' ] );
 
             diff_maskLF = recon_maskLF - img;
             err_maskLF = norm( diff_maskLF(:) ) / norm( img(:) );
+            ssimValue_maskLF = ssim( recon_maskLF, img );
             disp([ 'Err Nick: ', num2str( err_maskLF ) ]);
+            disp([ 'ssimValue_maskLF: ', num2str( ssimValue_maskLF ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
@@ -188,12 +194,15 @@ function run_msbpd( varargin )
               indx2str( datacase, nDatacases ), ', ', ...
               'Err_maskLF, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_maskLF ), ...
+              num2str( err_maskLF ), ', ', ...
+              num2str( ssimValue_maskLF ), ...
               '\n' ] );
 
             diff_wACR = recon_wACR - img;
             err_wACR = norm( diff_wACR(:) ) / norm( img(:) );
+            ssimValue_wACR = ssim( recon_wACR, img );
             disp([ 'Err wACR: ', num2str( err_wACR ) ]);
+            disp([ 'ssimValue_wACR: ', num2str( ssimValue_wACR ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
@@ -201,12 +210,15 @@ function run_msbpd( varargin )
               indx2str( datacase, nDatacases ), ', ', ...
               'Err_wACR, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_wACR ), ...
+              num2str( err_wACR ), ', ', ...
+              num2str( ssimValue_wACR ), ...
               '\n' ] );
 
             diff_maskLF_wACR = recon_maskLF_wACR - img;
             err_maskLF_wACR = norm( diff_maskLF_wACR(:) ) / norm( img(:) );
+            ssimValue_maskLF_wACR = ssim( recon_maskLF_wACR, img );
             disp([ 'Err Nick_wACR: ', num2str( err_maskLF_wACR ) ]);
+            disp([ 'ssimValue_maskLF_wACR: ', num2str( ssimValue_maskLF_wACR ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
@@ -214,12 +226,15 @@ function run_msbpd( varargin )
               indx2str( datacase, nDatacases ), ', ', ...
               'Err_maskLF_wACR, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_maskLF_wACR ), ...
+              num2str( err_maskLF_wACR ), ', ', ...
+              num2str( ssimValue_maskLF_wACR ), ...
               '\n' ] );
 
             diff_msbpd = recon_msbpd - img;
             err_msbpd = norm( diff_msbpd(:) ) / norm( img(:) );
+            ssimValue_msbpd = ssim( recon_msbpd, img );
             disp([ 'Err msbpd: ', num2str( err_msbpd ) ]);
+            disp([ 'SSIM msbpd: ', num2str( ssimValue_msbpd ) ]);
             fprintf( logID, [ ...
               num2str( noiseSDev ), ', ', ...
               indx2str( vdSig, max( vdSigs ) ), ', ', ...
@@ -227,8 +242,11 @@ function run_msbpd( varargin )
               indx2str( datacase, nDatacases ), ', ', ...
               'Err_msbpd, ', ...
               num2str( lambda ), ', ', ...
-              num2str( err_msbpd ), ...
+              num2str( err_msbpd ), ', ', ...
+              num2str( ssimValue_msbpd ), ...
               '\n' ] );
+
+            fclose( logID );
 
             if numel( absDiffRange ) == 0
               absDiffRange = [ 0 max( abs(diff(:) ) ) ];
@@ -243,8 +261,6 @@ function run_msbpd( varargin )
               'showScale', showScale, 'range', absDiffRange );
             showAndSaveThisImg( outDir, abs(diff_msbpd), 'absDiff_msbpd', verbose, 'showScale', showScale, ...
               'range', absDiffRange );
-
-            fclose( logID );
           end
         end
       end

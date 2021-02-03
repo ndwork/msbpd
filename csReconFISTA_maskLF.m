@@ -19,7 +19,7 @@ function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
   % polish - if set to true, adds a polishing step (default is false)
   % printEvery - FISTA prints a verbose statement every printEvery iterations
   % verbose - if true, prints informative statements
-  % waveletType - either 'Deaubechies' for Deaubechies-4 (default) or 'Haar'
+  % waveletType - either 'Daubechies' for Daubechies-4 (default) or 'Haar'
   %
   % Written by Nicholas Dwork - Copyright 2019
   %
@@ -40,7 +40,7 @@ function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
   p.addParameter( 'printEvery', 1, @ispositive );
   p.addParameter( 'wavSplit', wavSplit, @isnumeric );
   p.addParameter( 'verbose', false, @(x) isnumeric(x) || islogical(x) );
-  p.addParameter( 'waveletType', 'Deaubechies', @(x) true );
+  p.addParameter( 'waveletType', 'Daubechies', @(x) true );
   p.parse( varargin{:} );
   checkAdjoints = p.Results.checkAdjoints;
   debug = p.Results.debug;
@@ -63,11 +63,11 @@ function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
   % gGrad = A'*A*x - A'*b;
 
   function out = F( x )
-    out = fftshift( ufft2( x ) );
+    out = fftshift( fftshift( ufft2( ifftshift( ifftshift( x, 1 ), 2 ) ), 1 ), 2 );
   end
 
   function out = Fadj( y )
-    out = uifft2( ifftshift( y ) );
+    out = fftshift( fftshift( uifft2( ifftshift( ifftshift( y, 1 ), 2 ) ), 1 ), 2 );
   end
 
   M = ( samples ~= 0 );
@@ -95,9 +95,9 @@ function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
     out = Aadj( A( x ) ) - Aadjb;
   end
 
-  if strcmp( waveletType, 'Deaubechies' )
-    W = @(x) wtDeaubechies2( x, wavSplit );
-    WT = @(y) iwtDeaubechies2( y, wavSplit );
+  if strcmp( waveletType, 'Daubechies' )
+    W = @(x) wtDaubechies2( x, wavSplit );
+    WT = @(y) iwtDaubechies2( y, wavSplit );
 
   elseif strcmp( waveletType, 'Haar' )
     W = @(x) wtHaar2( x, wavSplit );
@@ -115,9 +115,11 @@ function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
 
   wavMask = makeLowFreqWavMask( size(samples), wavSplit );
 
+  nMask = sum( wavMask(:) );
+  nReg = numel( samples ) - nMask;
   function out = proxth( x, t )
     Wx = W( x );
-    proxL1Wx = proxL1Complex( Wx, t * lambda );
+    proxL1Wx = proxL1Complex( Wx, t * lambda / nReg );
     proxL1Wx( wavMask == 1 ) = Wx( wavMask == 1 );
     out = WT( proxL1Wx );
   end
@@ -127,7 +129,8 @@ function [recon,oValues] = csReconFISTA_maskLF( samples, lambda, varargin )
 
   function out = h( x )
     Wx = W(x);
-    out = sum( abs( Wx(:) ) );
+    Wx( wavMask == 1 ) = 0;
+    out = sum( abs( Wx(:) ) ) * lambda / nReg;
   end
 
   x0 = Fadj( samples );

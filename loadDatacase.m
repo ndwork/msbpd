@@ -8,8 +8,8 @@ function [img,lambda,lambda_2level,lambda_Nick] = loadDatacase( datacase, testIm
   if datacase == 0
     load( './mrData/brainData.mat', 'brainData' );
     padded = padData( brainData, [512 512] );
-    img = ifftc( padded );
-    img = scaleImg( img, [0 1], [0 4000] );
+    img = uifft2( ifftshift( ifftshift( padded, 1 ), 2 ) );
+    img = scaleImg( img, [0 1] );
   end
 
   if datacase == 1

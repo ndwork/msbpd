@@ -14,7 +14,7 @@ function makePaperImgs( mainOut, datacases, testImages )
 
     wavSplit = makeWavSplit( sImg );
     
-    wtImg = wtDeaubechies2( img, wavSplit );
+    wtImg = wtDaubechies2( img, wavSplit );
     wtImgScaled = wavScale( abs( wtImg ), wavSplit, 'range', [ 0 1 ] );
     if ~exist( [ outDir, '/wtScaledImg' ], 'dir' ), mkdir( [ outDir, '/wtScaledImg' ] ); end
     imwrite( wtImgScaled, [ outDir, '/wtScaledImg/wtScaledImg_', indx2str(datacase,nDatacases), '.png' ] );
@@ -43,7 +43,7 @@ function makePaperImgs( mainOut, datacases, testImages )
 
     fftDiffImg = fftImg - fftAcrImg;
     diffImg = uifft2( ifftshift( fftDiffImg ) );
-    wtDiffImg = wtDeaubechies2( diffImg, wavSplit );
+    wtDiffImg = wtDaubechies2( diffImg, wavSplit );
     wtDiffScaled = wavScale( abs( wtDiffImg ), wavSplit, 'range', [ 0 1 ] );
     if ~exist( [ outDir, '/wtDiffScaled' ], 'dir' ), mkdir( [ outDir, '/wtDiffScaled' ] ); end
     imwrite( wtDiffScaled, [ outDir, '/wtDiffScaled/wtDiffScaled_', indx2str(datacase,nDatacases), '.png' ] );
